@@ -75,7 +75,7 @@ export default function PosterGenerator() {
         const aspectRatio = img.width / img.height;
         let newWidth = watchWidth;
         let newHeight = newWidth / aspectRatio;
-        
+
         if (newHeight > watchHeight) {
           newHeight = watchHeight;
           newWidth = newHeight * aspectRatio;
@@ -124,10 +124,29 @@ export default function PosterGenerator() {
     }
   }, [generatedPoster, watchHeight]);
 
+  useEffect(() => {
+    if (imagePreview) {
+      const img = new window.Image();
+      img.src = imagePreview;
+      img.onload = () => {
+        const aspectRatio = img.width / img.height;
+        let newWidth = watchWidth;
+        let newHeight = newWidth / aspectRatio;
+
+        if (newHeight > watchHeight) {
+          newHeight = watchHeight;
+          newWidth = newHeight * aspectRatio;
+        }
+
+        setImageSize({ width: newWidth, height: newHeight });
+      };
+    }
+  }, [watchWidth, watchHeight, imagePreview]);
+
   return (
     <div className="flex w-full max-w-6xl gap-8">
       <div className="w-1/3">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <Label htmlFor="title">Title</Label>
             <Input id="title" {...register('title')} className="mt-1" />
