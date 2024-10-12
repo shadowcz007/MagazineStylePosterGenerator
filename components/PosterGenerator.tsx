@@ -12,24 +12,14 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useToast } from '../hooks/use-toast';
-import { Camera, Download } from 'lucide-react';
-import Image from 'next/image';
-
-const MAX_FILE_SIZE = 5000000;
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+import { Download } from 'lucide-react';
+import NextImage from 'next/image';
 
 const formSchema = z.object({
   title: z.string().min(1, { message: "Title is required" }),
   subtitle: z.string().optional(),
   url: z.string().url({ message: "Invalid URL" }),
-  image: z
-    .any()
-    .refine((files) => files?.length == 1, "Image is required.")
-    .refine((files) => files?.[0]?.size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
-    .refine(
-      (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
-      ".jpg, .jpeg, .png and .webp files are accepted."
-    ),
+  image: z.any(),
   width: z.string().min(1, "Width must be a positive number").transform((val) => Number(val)),
   height: z.string().min(1, "Height must be a positive number").transform((val) => Number(val)),
 });
@@ -53,11 +43,11 @@ export default function PosterGenerator() {
   const { register, handleSubmit, formState: { errors }, watch } = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      title: "",
-      subtitle: "",
-      url: "",
-      width: 1080,
-      height: 1920,
+      title: "00",
+      subtitle: "新选项",
+      url: "https://sharegpt-one.vercel.app/",
+      width: "344",
+      height: "444",
       image: null,
     },
   });
@@ -67,26 +57,16 @@ export default function PosterGenerator() {
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     const file = data.image[0];
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const img = new window.Image();
-      img.src = reader.result as string;
-      img.onload = () => {
-        const aspectRatio = img.width / img.height;
-        let newWidth = watchWidth;
-        let newHeight = newWidth / aspectRatio;
-        
-        if (newHeight > watchHeight) {
-          newHeight = watchHeight;
-          newWidth = newHeight * aspectRatio;
-        }
-
-        setImageSize({ width: newWidth, height: newHeight });
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
         setImagePreview(reader.result as string);
         setGeneratedPoster(true);
       };
-    };
-    reader.readAsDataURL(file);
+      reader.readAsDataURL(file);
+    } else {
+      setGeneratedPoster(true);
+    }
   };
 
   const downloadPoster = () => {
@@ -116,79 +96,72 @@ export default function PosterGenerator() {
   };
 
   useEffect(() => {
-    if (generatedPoster) {
-      setTitlePosition({ x: 20, y: 20 });
-      setSubtitlePosition({ x: 20, y: 80 });
-      setQrCodePosition({ x: 20, y: watchHeight - 120 });
-      setImagePosition({ x: 0, y: 0 });
-    }
-  }, [generatedPoster, watchHeight]);
-
-  useEffect(() => {
-    if (imagePreview) {
-      const img = new window.Image();
+    if (generatedPoster && imagePreview) {
+      const img = new Image();
       img.src = imagePreview;
       img.onload = () => {
         const aspectRatio = img.width / img.height;
-        let newWidth = watchWidth;
-        let newHeight = newWidth / aspectRatio;
+        let newWidth = Number(watchWidth);
+        let newHeight = (newWidth / aspectRatio);
 
-        if (newHeight > watchHeight) {
-          newHeight = watchHeight;
+        if (newHeight > Number(watchHeight)) {
+          newHeight = Number(watchHeight);
           newWidth = newHeight * aspectRatio;
         }
 
         setImageSize({ width: newWidth, height: newHeight });
       };
     }
-  }, [watchWidth, watchHeight, imagePreview]);
+  }, [generatedPoster, imagePreview, watchWidth, watchHeight]);
 
   return (
-    <div className="flex w-full max-w-6xl gap-8">
-      <div className="w-1/3">
+    <div className="flex flex-col w-full max-w-2xl gap-8">
+      <h1 className="text-2xl font-bold">Magazine Style Poster Generator</h1>
+      <div className="flex flex-col gap-4">
+        {/* @ts-ignore */}
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <Label htmlFor="title">Title</Label>
             <Input id="title" {...register('title')} />
-            {errors.title && <p>{errors.title.message}</p>}
+            {errors.title && <p className="text-red-500">{errors.title.message}</p>}
           </div>
           <div>
             <Label htmlFor="subtitle">Subtitle</Label>
             <Input id="subtitle" {...register('subtitle')} />
-            {errors.subtitle && <p>{errors.subtitle.message}</p>}
+            {errors.subtitle && <p className="text-red-500">{errors.subtitle.message}</p>}
           </div>
           <div>
             <Label htmlFor="url">URL</Label>
             <Input id="url" {...register('url')} />
-            {errors.url && <p>{errors.url.message}</p>}
+            {errors.url && <p className="text-red-500">{errors.url.message}</p>}
           </div>
           <div>
             <Label htmlFor="image">Image</Label>
             <Input id="image" type="file" {...register('image')} />
-            {errors.image && <p>{errors.image.message}</p>}
+            {errors.image && <p className="text-red-500">{errors.image.message}</p>}
           </div>
           <div>
             <Label htmlFor="width">Width</Label>
             <Input id="width" type="number" {...register('width')} />
-            {errors.width && <p>{errors.width.message}</p>}
+            {errors.width && <p className="text-red-500">{errors.width.message}</p>}
           </div>
           <div>
             <Label htmlFor="height">Height</Label>
             <Input id="height" type="number" {...register('height')} />
-            {errors.height && <p>{errors.height.message}</p>}
+            {errors.height && <p className="text-red-500">{errors.height.message}</p>}
           </div>
           <Button type="submit">Generate Poster</Button>
         </form>
       </div>
 
-      <div className="w-2/3">
-        {generatedPoster && (
-          <div className="mt-8">
-            <div
-              ref={posterRef}
-              className="relative bg-white border border-gray-300 rounded-lg overflow-hidden"
-              style={{ width: `${watchWidth}px`, height: `${watchHeight}px` }}>
-
+      {generatedPoster && (
+        <div className="mt-8">
+          <div
+            ref={posterRef}
+            className="relative bg-white border border-gray-300 rounded-lg overflow-hidden"
+            style={{ width: `${watchWidth}px`, height: `${watchHeight}px` }}
+          >
+            {imagePreview && (
               <Draggable
                 nodeRef={imageRef}
                 bounds="parent"
@@ -196,8 +169,8 @@ export default function PosterGenerator() {
                 onStop={(e, data) => setImagePosition({ x: data.x, y: data.y })}
               >
                 <Resizable
-                  size={{ width: imageSize.width, height: imageSize.height }}
-                  onResizeStop={(e: MouseEvent | TouchEvent, direction: string, ref: HTMLElement, d: { width: number, height: number }) => {
+                  size={imageSize}
+                  onResizeStop={(e, direction, ref, d) => {
                     setImageSize({
                       width: imageSize.width + d.width,
                       height: imageSize.height + d.height
@@ -209,61 +182,58 @@ export default function PosterGenerator() {
                   maxHeight={watchHeight}
                 >
                   <div ref={imageRef} className="cursor-move">
-                    <Image src={imagePreview as string} alt="Uploaded" layout="fill" objectFit="cover" />
+                    <NextImage src={imagePreview} alt="Uploaded" layout="fill" objectFit="cover" />
                   </div>
                 </Resizable>
               </Draggable>
-
-              <Draggable
-                nodeRef={titleRef}
-                bounds="parent"
-                position={titlePosition}
-                onStop={(e, data) => setTitlePosition({ x: data.x, y: data.y })}
+            )}
+            <Draggable
+              nodeRef={titleRef}
+              bounds="parent"
+              position={titlePosition}
+              onStop={(e, data) => setTitlePosition({ x: data.x, y: data.y })}
+            >
+              <h1
+                ref={titleRef}
+                className="absolute text-6xl font-bold cursor-move"
+                style={{ color: '#fff', textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)' }}
               >
-                <h1
-                  ref={titleRef}
-                  className="absolute text-6xl font-bold cursor-move"
-                  style={{ color: '#fff', textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)' }}
-                >
-                  {watch('title')}
-                </h1>
-              </Draggable>
-
-              <Draggable
-                nodeRef={subtitleRef}
-                bounds="parent"
-                position={subtitlePosition}
-                onStop={(e, data) => setSubtitlePosition({ x: data.x, y: data.y })}
+                {watch('title')}
+              </h1>
+            </Draggable>
+            <Draggable
+              nodeRef={subtitleRef}
+              bounds="parent"
+              position={subtitlePosition}
+              onStop={(e, data) => setSubtitlePosition({ x: data.x, y: data.y })}
+            >
+              <h2
+                ref={subtitleRef}
+                className="absolute text-3xl font-semibold cursor-move"
+                style={{ color: '#fff', textShadow: '1px 1px 2px rgba(0, 0, 0, 0.5)' }}
               >
-                <h2
-                  ref={subtitleRef}
-                  className="absolute text-3xl font-semibold cursor-move"
-                  style={{ color: '#fff', textShadow: '1px 1px 2px rgba(0, 0, 0, 0.5)' }}
-                >
-                  {watch('subtitle')}
-                </h2>
-              </Draggable>
-
-              <Draggable
-                nodeRef={qrCodeRef}
-                bounds="parent"
-                position={qrCodePosition}
-                onStop={(e, data) => setQrCodePosition({ x: data.x, y: data.y })}
+                {watch('subtitle')}
+              </h2>
+            </Draggable>
+            <Draggable
+              nodeRef={qrCodeRef}
+              bounds="parent"
+              position={qrCodePosition}
+              onStop={(e, data) => setQrCodePosition({ x: data.x, y: data.y })}
+            >
+              <div
+                ref={qrCodeRef}
+                className="absolute cursor-move p-2 bg-white bg-opacity-50 rounded"
               >
-                <div
-                  ref={qrCodeRef}
-                  className="absolute cursor-move p-2 bg-white bg-opacity-50 rounded"
-                >
-                  <QRCodeSVG value={watch('url')} size={100} />
-                </div>
-              </Draggable>
-            </div>
-            <Button onClick={downloadPoster} className="mt-4 w-full">
-              <Download className="mr-2 h-4 w-4" /> Download Poster
-            </Button>
+                <QRCodeSVG value={watch('url')} size={100} />
+              </div>
+            </Draggable>
           </div>
-        )}
-      </div>
+          <Button onClick={downloadPoster} className="mt-4 w-full">
+            <Download className="mr-2 h-4 w-4" /> Download Poster
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
