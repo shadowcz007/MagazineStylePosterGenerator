@@ -30,8 +30,8 @@ const formSchema = z.object({
       (files) => ACCEPTED_IMAGE_TYPES.includes(files?.[0]?.type),
       ".jpg, .jpeg, .png and .webp files are accepted."
     ),
-  width: z.number().min(1, "Width must be a positive number"),
-  height: z.number().min(1, "Height must be a positive number"),
+  width: z.string().min(1, "Width must be a positive number").transform((val) => Number(val)),
+  height: z.string().min(1, "Height must be a positive number").transform((val) => Number(val)),
 });
 
 export default function PosterGenerator() {
@@ -75,7 +75,7 @@ export default function PosterGenerator() {
         const aspectRatio = img.width / img.height;
         let newWidth = watchWidth;
         let newHeight = newWidth / aspectRatio;
-
+        
         if (newHeight > watchHeight) {
           newHeight = watchHeight;
           newWidth = newHeight * aspectRatio;
@@ -149,38 +149,35 @@ export default function PosterGenerator() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <Label htmlFor="title">Title</Label>
-            <Input id="title" {...register('title')} className="mt-1" />
-            {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title.message as string}</p>}
+            <Input id="title" {...register('title')} />
+            {errors.title && <p>{errors.title.message}</p>}
           </div>
           <div>
             <Label htmlFor="subtitle">Subtitle</Label>
-            <Input id="subtitle" {...register('subtitle')} className="mt-1" />
+            <Input id="subtitle" {...register('subtitle')} />
+            {errors.subtitle && <p>{errors.subtitle.message}</p>}
           </div>
           <div>
             <Label htmlFor="url">URL</Label>
-            <Input id="url" {...register('url')} className="mt-1" />
-            {errors.url && <p className="text-red-500 text-sm mt-1">{errors.url.message as string}</p>}
+            <Input id="url" {...register('url')} />
+            {errors.url && <p>{errors.url.message}</p>}
           </div>
           <div>
             <Label htmlFor="image">Image</Label>
-            <Input id="image" type="file" accept={ACCEPTED_IMAGE_TYPES.join(',')} {...register('image')} className="mt-1" />
-            {errors.image && <p className="text-red-500 text-sm mt-1">{errors.image.message as string}</p>}
+            <Input id="image" type="file" {...register('image')} />
+            {errors.image && <p>{errors.image.message}</p>}
           </div>
-          <div className="flex space-x-4">
-            <div className="flex-1">
-              <Label htmlFor="width">Width (px)</Label>
-              <Input id="width" type="number" {...register('width')} className="mt-1" />
-              {errors.width && <p className="text-red-500 text-sm mt-1">{errors.width.message as string}</p>}
-            </div>
-            <div className="flex-1">
-              <Label htmlFor="height">Height (px)</Label>
-              <Input id="height" type="number" {...register('height')} className="mt-1" />
-              {errors.height && <p className="text-red-500 text-sm mt-1">{errors.height.message as string}</p>}
-            </div>
+          <div>
+            <Label htmlFor="width">Width</Label>
+            <Input id="width" type="number" {...register('width')} />
+            {errors.width && <p>{errors.width.message}</p>}
           </div>
-          <Button type="submit" className="w-full">
-            <Camera className="mr-2 h-4 w-4" /> Generate Poster
-          </Button>
+          <div>
+            <Label htmlFor="height">Height</Label>
+            <Input id="height" type="number" {...register('height')} />
+            {errors.height && <p>{errors.height.message}</p>}
+          </div>
+          <Button type="submit">Generate Poster</Button>
         </form>
       </div>
 
